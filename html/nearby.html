@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="content-language" content="zh-CN" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="full-screen" content="yes">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="browsermode" content="application">
+    <meta name="x5-page-mode" content="app">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>附近</title>
+    <style type="text/css" rel="stylesheet">
+      html,body{margin:0;padding:0;width:100%;height:100%;}
+      img,canvas{-webkit-touch-callout:none;}
+      #container{width:100%;height:100%;}
+
+
+      #panel {
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+        }
+        #panel .amap-call {
+            background-color: #009cf9;
+            border-top-left-radius: 4px;
+   	        border-top-right-radius: 4px;
+        }
+        #panel .amap-lib-driving {
+	        border-bottom-left-radius: 4px;
+   	        border-bottom-right-radius: 4px;
+            overflow: hidden;
+        }
+
+      .amap-logo img{margin-left:55px;margin-bottom:10px;}
+      .amap-scalecontrol{margin-left:58px;margin-bottom:15px;}
+      .amap-copyright{display: none;}
+      .locationIcon{background-color:#fff;width:36px;height:36px;
+        -webkit-border-radius: 4px;
+        -moz-border-radius: 4px;
+        border-radius: 4px;
+        box-shadow: 2px 2px 5px #888888;
+      }
+      .locationIcon>img{width:32px;margin-left:2px;margin-top:2px;}
+      .makerStyle{background-color:#FF4814;font-size:12px;color:#fff;
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        border-radius: 2px;
+        width:50px;
+        height:30px;
+        line-height:30px;
+        text-align: center;
+      }
+      .infoWindow{
+        width:280px;
+        height:130px;
+        font-size:13px;
+        background-color:#fff;
+        box-shadow: 2px 2px 2px #888;
+        padding-bottom: 20px;
+      }
+      .info_arrow{
+        height:20px;
+        width:20px;
+        transform:rotate(-45deg);
+        -ms-transform:rotate(-45deg);
+        -moz-transform:rotate(45deg);
+        -webkit-transform:rotate(45deg);
+        -o-transform:rotate(45deg);
+        padding-left: 0 !important;
+        position: absolute;
+        left:125px;
+        top:132px;
+        background-color:#ffffff;
+        z-index: 4;
+      }
+      .info_title{
+        background-color:#0090FF;
+        height:28px;line-height:28px;color:#fff;padding-left:10px;
+      }
+      .infoWindow>div{padding-left:10px;margin-bottom:5px;}
+      .info_name{margin-top:10px;}
+      .info_address{color: #434754;}
+      .info_type{color: #434754;}
+      .info_dis{}
+      .dis_span{color: #FA2D00;font-weight: bold;}
+      .info_close{position: absolute;width:28px;height:26px;right:0;top:0;}
+      .info_close>img{margin-top:3px;right:3px;width:20px;}
+      .loc_circle{width:50px;height:50px;border:2px solid #49B3F4;
+        border-radius:50px;background-color:#64C7FA;opacity:0.5;}
+      .loc_img{position: relative;left:20px;top:-34px;}
+    </style>
+    <script src="https://webapi.amap.com/maps?v=1.4.14&key=b9c503c21f0b0dfdee1adaf5fb6bb363"></script>
+  </head>
+<body onload='init()'>
+  <div id="container"></div>
+  <div id="panel"></div>
+  <script type="text/javascript">
+   //========监听webview传递过来的数据
+   var message=null;
+   function init(){
+     document.addEventListener('message', function(e) {
+       message = e.data;
+       doSearch([108.88325,34.22548]);
+    });
+  }
+       
+    //var isiPhone = navigator.userAgent.toLocaleLowerCase().match(/iPhone/i);
+    var ua = navigator.userAgent.toLocaleLowerCase();
+    //是否移动设备
+    var isMobile = /mobile/i.test(ua);
+    var isAndroid = /android/i.test(ua);
+    //是否 iOS 设备
+    var isiOS = !!ua.match(/\(i[^;]+;( u;)? cpu.+mac os x/);
+    //是否 iPhone 设备
+    var isiPhone = /iphone/i.test(ua);
+    // 是否 iPad 设备
+    var isiPad = /ipad/i.test(ua);  
+    var map = new AMap.Map('container', {
+      resizeEnable: true,
+      zoom: 15
+    });
+    var driving = null,geocoder=null;
+    var newLant = null,newLng = null;
+    var locationIcon = '<div class="locationIcon">'
+    + '<img src="./geolocation.png"/>'
+    + '</div>';
+
+    var locationComplete = function(data){
+      map.clearMap();
+      doSearch([data.position.lng, data.position.lat]);
+    };
+    var locationError = function(){
+        Alert('定位失败，请在手机上开启定位:设置->隐私->定位服务->找厕所->使用应用期间');
+      
+      
+    };
+
+    map.plugin('AMap.Geolocation', function () {
+      var geolocation = new AMap.Geolocation({
+        enableHighAccuracy: true,
+        timeout: 60000,
+        maximumAge: 0,
+        convert: true,
+        showButton: true,
+        buttonPosition: 'LB',
+        buttonOffset: new AMap.Pixel(10, 10),
+        showMarker: true,
+        showCircle: true,
+        panToLocation: true,
+        zoomToAccuracy:true,
+        buttonDom: locationIcon
+      });
+      map.addControl(geolocation);
+      geolocation.getCurrentPosition();
+      AMap.event.addListener(geolocation, 'complete', locationComplete);
+      AMap.event.addListener(geolocation, 'error', locationError);
+    });
+
+    map.plugin(["AMap.ToolBar"],function(){
+      map.addControl(new AMap.ToolBar());
+    });
+    map.plugin(["AMap.Scale"],function(){
+      map.addControl(new AMap.Scale());
+    });
+    
+    AMap.service('AMap.Driving', function(){
+      driving= new AMap.Driving({
+        policy: AMap.DrivingPolicy.LEAST_TIME, // 其它policy参数请参考 https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingPolicy
+        ferry: 1 // 是否可以使用轮渡
+      });
+    });
+    AMap.service('AMap.Geocoder', function(){
+      geocoder= new AMap.Geocoder({
+        map: map,
+        extensions:"all"
+      });
+    });
+    function _closeInfoWindow(){
+      map.clearInfoWindow();
+    }
+    function doSearch(center){
+      if(null!=message){
+        //展示定位
+        var marker = new AMap.Marker({
+          position: center,
+          map: map,
+          content:'<div class="loc_circle"></div><img class="loc_img" src="loc.png" style="width:16px;"/>'
+        });
+          //构造路线导航类
+        geocoder.getLocation(message,function(status,result){
+          if (status === 'complete' && result.info === 'OK') {
+            newLant=result.geocodes[0].location.lat;
+            newLng=result.geocodes[0].location.lng;
+            // 构造路线导航类
+            // driving = new AMap.Driving(drivingOption)
+            // 根据起终点经纬度规划驾车导航路线
+            driving.search(new AMap.LngLat(center[0],center[1]), new AMap.LngLat(newLng,newLant), function(status, result) {
+                // result即是对应的驾车导航信息，相关数据结构文档请参考 https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
+                if (status === 'complete') {
+                    if (result.routes && result.routes.length) {
+                        // 绘制第一条路线，也可以按需求绘制其它几条路线
+                        drawRoute(result.routes[0])
+                    }
+                } else {
+                  alert('获取驾车数据失败：' + result)
+                }
+            });
+          }
+        });
+      }
+    }
+    // document.querySelector('a.amap-logo').onclick = function(){
+    //   return false;
+    // };
+
+    function drawRoute (route) {
+        var path = parseRouteToPath(route)
+        var startMarker = new AMap.Marker({
+            position: path[0],
+            icon: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
+            map: map
+        })
+        var endMarker = new AMap.Marker({
+            position: path[path.length - 1],
+            icon: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
+            map: map
+        })
+    var routeLine = new AMap.Polyline({
+            path: path,
+            isOutline: true,
+            outlineColor: '#ffeeee',
+            borderWeight: 2,
+            strokeWeight: 5,
+            strokeColor: '#0091ff',
+            lineJoin: 'round'
+        })
+        routeLine.setMap(map)
+        // 调整视野达到最佳显示区域
+        map.setFitView([ startMarker, endMarker, routeLine ])
+    }
+    // 解析DrivingRoute对象，构造成AMap.Polyline的path参数需要的格式
+    // DrivingResult对象结构参考文档 https://lbs.amap.com/api/javascript-api/reference/route-search#m_DriveRoute
+    function parseRouteToPath(route) {
+        var path = []
+        for (var i = 0, l = route.steps.length; i < l; i++) {
+            var step = route.steps[i]
+            for (var j = 0, n = step.path.length; j < n; j++) {
+              path.push(step.path[j])
+            }
+        }
+        return path
+    }
+   
+    //本地开发测试代码
+    if(null!=message){
+      map.setCenter([108.88325, 34.22548]);
+    }
+    function Alert(str) {    
+      var msgw,msgh,bordercolor;    
+      msgw=350;//提示窗口的宽度    
+      msgh=120;//提示窗口的高度    
+      titleheight=25 //提示窗口标题高度    
+      bordercolor="#336699";//提示窗口的边框颜色    
+      titlecolor="#99CCFF";//提示窗口的标题颜色    
+      var sWidth,sHeight;    
+      //获取当前窗口尺寸    
+      sWidth = document.body.offsetWidth;    
+      sHeight = document.body.offsetHeight;    
+      //背景div    
+      var bgObj=document.createElement("div");    
+      bgObj.setAttribute('id','alertbgDiv');    
+      bgObj.style.position="absolute";    
+      bgObj.style.top="0";    
+      bgObj.style.background="#E8E8E8";    
+      bgObj.style.filter="progid:DXImageTransform.Microsoft.Alpha(style=3,opacity=25,finishOpacity=75";    
+      bgObj.style.opacity="0.6";    
+      bgObj.style.left="0";    
+      bgObj.style.width = sWidth + "px";    
+      bgObj.style.height = sHeight + "px";    
+      bgObj.style.zIndex = "10000";    
+      document.body.appendChild(bgObj);    
+      //创建提示窗口的div    
+      var msgObj = document.createElement("div")    
+      msgObj.setAttribute("id","alertmsgDiv");    
+      msgObj.setAttribute("align","center");    
+      msgObj.style.background="white";    
+      msgObj.style.border="1px solid " + bordercolor;    
+      msgObj.style.position = "absolute";    
+      msgObj.style.left = "50%";    
+      msgObj.style.font="12px/1.6em Verdana, Geneva, Arial, Helvetica, sans-serif";    
+      //窗口距离左侧和顶端的距离     
+      msgObj.style.marginLeft = "-175px";    
+      //窗口被卷去的高+（屏幕可用工作区高/2）-150    
+      msgObj.style.top = document.body.scrollTop+(window.screen.availHeight/2)-150 +"px";    
+      msgObj.style.width = msgw + "px";    
+      msgObj.style.height = msgh + "px";    
+      msgObj.style.textAlign = "center";    
+      msgObj.style.lineHeight ="25px";    
+      msgObj.style.zIndex = "10001";    
+      document.body.appendChild(msgObj);    
+      //提示信息标题    
+      var title=document.createElement("h4");    
+      title.setAttribute("id","alertmsgTitle");    
+      title.setAttribute("align","left");    
+      title.style.margin="0";    
+      title.style.padding="3px";    
+      title.style.background = bordercolor;    
+      title.style.filter="progid:DXImageTransform.Microsoft.Alpha(startX=20, startY=20, finishX=100, finishY=100,style=1,opacity=75,finishOpacity=100);";    
+      title.style.opacity="0.75";    
+      title.style.border="1px solid " + bordercolor;    
+      title.style.height="18px";    
+      title.style.font="12px Verdana, Geneva, Arial, Helvetica, sans-serif";    
+      title.style.color="white";    
+      title.innerHTML="提示信息";    
+      document.getElementById("alertmsgDiv").appendChild(title);    
+      //提示信息    
+      var txt = document.createElement("p");    
+      txt.setAttribute("id","msgTxt");    
+      txt.style.margin="16px 0";    
+      txt.innerHTML = str;    
+      document.getElementById("alertmsgDiv").appendChild(txt);    
+      //设置关闭时间    
+      window.setTimeout("closewin()",5000);     
+    }    
+    function closewin() {    
+      document.body.removeChild(document.getElementById("alertbgDiv"));    
+      document.getElementById("alertmsgDiv").removeChild(document.getElementById("alertmsgTitle"));    
+      document.body.removeChild(document.getElementById("alertmsgDiv"));    
+    } 
+  </script>
+</body>
+</html>
