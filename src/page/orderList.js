@@ -6,11 +6,11 @@ import React, { Component } from 'react';
         View,
         Image,
         SectionList,
-        PermissionsAndroid,
-        ToastAndroid,
-        NativeModules
+        PermissionsAndroid
     } from 'react-native';
 import { NavigationActions } from 'react-navigation';
+import CommonAndroidUntils from './CommonAndroidUntils';
+
 // import { init,Geolocation } from "react-native-amap-geolocation";
 var la=null;
 var ln=null;
@@ -20,7 +20,6 @@ async function requestCameraPermission() {
    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
 }
 requestCameraPermission();
- import CommonAndroidUntils from './CommonAndroidUntils';
   //屏幕信息
 const dimensions = require('Dimensions');
 //获取屏幕的宽度和高度
@@ -39,64 +38,20 @@ export default class orderList extends Component {
     }
     async componentDidMount() {
         CommonAndroidUntils.getResult((location)=>{
-            alert(location);
-            this.setState({longitude:location.longitude,latitude:location.latitude});
+            var ar= location.split(",");
+            this.setState({longitude:ar[0],latitude:ar[1]});
         });
-       // geolocationInit();
-      //  Geolocation.start();
-        // await Geolocation.init({
-        //   ios: "",
-        //   android: ""
-        // })
-        // Geolocation.getCurrentPosition(({ coords }) => {
-        //     alert(coords);
-        //   });
-        // Geolocation.setOptions({
-        //   interval: 8000,
-        //   distanceFilter: 20
-        // })
-        
-        // Geolocation.addLocationListener(location => {
-        //   console.log(location);
-        //   this.setState({longitude:location.longitude,latitude:location.latitude},function(){
-        //   //  Geolocation.stop();
-        //   });
-        // });
-        // Geolocation.start();
-    
-        // this.listener = AMapLocation.addEventListener(location =>{
-        //     this.setState({longitude:location.longitude,latitude:location.latitude},function(){
-        //     //  Geolocation.stop();
-        //     });
-        // });
-        // AMapLocation.startLocation({
-        //   accuracy: 'HighAccuracy',
-        //   killProcess: true,
-        //   needDetail: true,
-        // });
+      
         // await init({
         //    android: "f9bbf84cf6922d6c80b1ac282ecb1eb8"
         // })
         // await Geolocation.getCurrentPosition(({ location }) => {
-        //         //alert(location);
         //         la=location.latitude;
         //         ln=location.longitude;
         //         this.setState({latitude:location.latitude,
         //             longitude:location.longitude},function(){
-        //                 //alert(ln);
         //             })
         //       });
-        // Geolocation.setOptions({
-        //     interval: 60,
-        //     distanceFilter: 20,
-        //     needDetail:true,
-        // })
-        // Geolocation.addLocationListener(location =>{
-        //     this.show(location)
-        //     la=location.latitude;
-        //     ln=location.longitude;
-        // })
-       // Geolocation.start()
       }
       
       componentWillUnmount() {
@@ -104,14 +59,14 @@ export default class orderList extends Component {
       }
       
       addressClick=(address)=>{
-       fetch('https://restapi.amap.com/v3/place/text?key=027aa6b88f4c6de233a4e793839160ba&keywords='+address+'&types=&city=&children=1&offset=1&page=1&extensions=base')
+        fetch('https://restapi.amap.com/v3/place/text?key=027aa6b88f4c6de233a4e793839160ba&keywords='+address+'&types=&city=&children=1&offset=1&page=1&extensions=base')
         .then((response) => response.text())
         .then((responseText) => {
           var responsess=JSON.parse(responseText);
           if("OK"==responsess.info){
             var locat=responsess.pois[0].location;
             var arr=locat.split(',');
-            CommonAndroidUntils.show(108.88325,34.22548,parseFloat(arr[0]),parseFloat(arr[1]));
+            CommonAndroidUntils.show(this.state.longitude,this.state.latitude,parseFloat(arr[0]),parseFloat(arr[1]));
           }
         });
     //   const navigateAction = NavigationActions.navigate({
