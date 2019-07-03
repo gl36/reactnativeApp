@@ -38,6 +38,10 @@ export default class orderList extends Component {
         }
     }
     async componentDidMount() {
+        CommonAndroidUntils.getResult((location)=>{
+            alert(location);
+            this.setState({longitude:location.longitude,latitude:location.latitude});
+        });
        // geolocationInit();
       //  Geolocation.start();
         // await Geolocation.init({
