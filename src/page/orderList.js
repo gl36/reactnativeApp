@@ -1,13 +1,5 @@
 import React, { Component } from 'react';
-    import {
-        TouchableOpacity,
-        StyleSheet,
-        Text,
-        View,
-        Image,
-        SectionList,
-        PermissionsAndroid
-    } from 'react-native';
+import { TouchableOpacity,StyleSheet, Text, View, Image, SectionList, PermissionsAndroid} from 'react-native';
 import { NavigationActions } from 'react-navigation';
 import CommonAndroidUntils from './CommonAndroidUntils';
 
@@ -18,8 +10,11 @@ var ln=null;
 async function requestCameraPermission() {  
    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
+   await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
 }
 requestCameraPermission();
+
+
   //屏幕信息
 const dimensions = require('Dimensions');
 //获取屏幕的宽度和高度
@@ -29,6 +24,7 @@ const typeIcon=[{'id':0,'value':"接货中"},
         {'id':1,'value':"待返场"},{'id':2,'value':"待派送"},
         {'id':3,'value':"已派送"},{'id':4,'value':"已完成"}];
 export default class orderList extends Component {
+    _keyExtractor = (item,index)=>item.id;
     constructor(props) {
         super(props);
         this.state = {
@@ -38,7 +34,7 @@ export default class orderList extends Component {
     }
     async componentDidMount() {
         CommonAndroidUntils.getResult((location)=>{
-            var ar= location.split(",");
+           var ar= location.split(",");
             this.setState({longitude:ar[0],latitude:ar[1]});
         });
       
@@ -52,6 +48,7 @@ export default class orderList extends Component {
         //             longitude:location.longitude},function(){
         //             })
         //       });
+       
       }
       
       componentWillUnmount() {
@@ -65,21 +62,22 @@ export default class orderList extends Component {
           var responsess=JSON.parse(responseText);
           if("OK"==responsess.info){
             var locat=responsess.pois[0].location;
+            //alert(locat);
             var arr=locat.split(',');
-            CommonAndroidUntils.show(this.state.longitude,this.state.latitude,parseFloat(arr[0]),parseFloat(arr[1]));
+            CommonAndroidUntils.show(parseFloat(this.state.longitude),parseFloat(this.state.latitude),parseFloat(arr[0]),parseFloat(arr[1]));
           }
         });
-    //   const navigateAction = NavigationActions.navigate({
-    //         routeName: 'GDmap',
-    //         params: {
-    //             address:address
-    //             // latitude:this.state.latitude,
-    //             // longitude:this.state.longitude
-    //         },
-    //     });
-    //     this.props.navigation.dispatch(navigateAction);
+        // const navigateAction = NavigationActions.navigate({
+        //     routeName: 'AWebView',
+        //     params: {
+        //         address:address,
+        //         latitude:this.state.latitude,
+        //         longitude:this.state.longitude
+        //     },
+        // });
+        // this.props.navigation.dispatch(navigateAction);
     }
-    _renderItem = (info) => {
+    _renderItem = (info,i) => {
         var time =info.item.time;
         var yunOrder =info.item.yunOrder;
         var person =info.item.person;
@@ -95,28 +93,8 @@ export default class orderList extends Component {
             ig=require('./../assets/images/da.png'); 
         }
         
-        return  <View style={{flexDirection:'column'}}>
-            {/* <TouchableOpacity style={styles.button_view}
-                    onPress={this.requestReadPermission.bind(this)}>
-                    <Text style={styles.button_text}>申请读写权限</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button_view}
-                    onPress={this.requestCarmeraPermission.bind(this)}>
-                    <Text style={styles.button_text}>申请相机权限</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button_view}
-                    onPress={this.requestLocationPermission.bind(this)}>
-                    <Text style={styles.button_text}>申请访问地址权限</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button_view}
-                                  onPress={this.checkPermission.bind(this)}>
-                    <Text style={styles.button_text}>查询是否获取了读写权限</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button_view}
-                                  onPress={this.requestMultiplePermission.bind(this)}>
-                    <Text style={styles.button_text}>一次申请所以权限</Text>
-                </TouchableOpacity> */}
-                    <View style={{flexDirection:'row',justifyContent:'space-between',marginRight:10}}>
+        return  <View style={{flexDirection:'column'}} key={info.item.typeid+i}>
+                     <View style={{flexDirection:'row',justifyContent:'space-between',marginRight:10}}>
                          <Text style={styles.itemIcon}>
                          <Image source={ig} style={styles.iconImages}/> 
                             <Text style={{marginLeft:20}}> {time} </Text> 
@@ -126,15 +104,15 @@ export default class orderList extends Component {
                             if(info.id==typeID){
                                 if(typeID==0 || typeID==1){
                                     return (
-                                        <Text style={styles.itemt0}>{info.value}</Text>
+                                        <Text style={styles.itemt0} key={index}>{info.value}</Text>
                                         );
                                 }else if(typeID==2 || typeID==3){
                                     return (
-                                        <Text style={styles.itemt3}>{info.value}</Text>
+                                        <Text style={styles.itemt3} key={index}>{info.value}</Text>
                                         ); 
                                 }else{
                                     return (
-                                        <Text style={styles.itemt}>{info.value}</Text>
+                                        <Text style={styles.itemt} key={index}>{info.value}</Text>
                                         ); 
                                 }
                             }
@@ -164,9 +142,9 @@ export default class orderList extends Component {
         
     }
     
-    _sectionComp = (info) => {
+    _sectionComp = (info,i) => {
         var txt = info.section.key;
-        return <Text style={styles.textc}>{txt}</Text>
+        return <Text style={styles.textc} key={i}>{txt}</Text>
     }
     goback(){
         const { goBack } = this.props.navigation; //获取navigation的goBack方法
@@ -197,10 +175,31 @@ export default class orderList extends Component {
                     <Text style={{color:'#fff',width:'50%',fontSize:20}}>我的订单</Text>
                     
                </View>
+               {/* <TouchableOpacity style={styles.button_view}
+                    onPress={this.requestReadPermission.bind(this)}>
+                    <Text style={styles.button_text}>申请读写权限</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button_view}
+                    onPress={this.requestCarmeraPermission.bind(this)}>
+                    <Text style={styles.button_text}>申请相机权限</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button_view}
+                    onPress={this.requestLocationPermission.bind(this)}>
+                    <Text style={styles.button_text}>申请访问地址权限</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button_view}
+                                  onPress={this.checkPermission.bind(this)}>
+                    <Text style={styles.button_text}>查询是否获取了读写权限</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button_view}
+                                  onPress={this.requestMultiplePermission.bind(this)}>
+                    <Text style={styles.button_text}>一次申请所以权限</Text>
+                </TouchableOpacity> */}
               <SectionList
                 renderSectionHeader={this._sectionComp}
                 renderItem={this._renderItem}
                 sections={sections}
+                // keyExtractor={this._keyExtractor}
                 // ItemSeparatorComponent={() => <View><Text></Text></View>}
                 // ListHeaderComponent={() => <View style={{ backgroundColor: '#25B960', alignItems: 'center', height: 30 }}><Text style={{ fontSize: 18, color: '#ffffff' }}>通讯录</Text></View>}
                 // ListFooterComponent={() => <View style={{ backgroundColor: '#25B960', alignItems: 'center', height: 30 }}><Text style={{ fontSize: 18, color: '#ffffff' }}>通讯录尾部</Text></View>}
