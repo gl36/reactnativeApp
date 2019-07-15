@@ -12,6 +12,7 @@ import {
     Easing,
 } from 'react-native';
 import { RNCamera } from 'react-native-camera'
+import LocalBarcodeRecognizer from 'react-native-local-barcode-recognizer';
 //图片选择器
 var ImagePicker = require('react-native-image-picker');
 //图片选择器参数设置
@@ -25,20 +26,22 @@ var options = {
     path: 'images'
   }
 };
-     
+const imageBase64 = "data:image/jpeg;base64,";  
 export default class electronicsOrder extends Component{
         constructor(props){
             super(props);
              // 初始化数据源
             this.state={
-                title : this.props.tabLabel,
+                tabTitle : this.props.tabLabel,
                 avatarSource: null,
                 textval:null,
+                sourceData:null,
                 viewAppear:false,
                 moveAnim: new Animated.Value(0)
             }
         }
         componentDidMount() {
+            //进入后直接开始扫描
             //this.startAnimation();
         }
         startAnimation = () => {
@@ -61,6 +64,7 @@ export default class electronicsOrder extends Component{
                 
                 });
             }
+            //如果要跳转地址使用下面的
                 // navigate('createOrder', {
                 //     url: data
                 // })
@@ -69,9 +73,8 @@ export default class electronicsOrder extends Component{
    choosePic() {
         ImagePicker.showImagePicker(options, (response) => {
             console.log('Response = ', response);
-
             if (response.didCancel) {
-            console.log('用户取消了选择！');
+                console.log('用户取消了选择！');
             }
             else if (response.error) {
                 alert("ImagePicker发生错误：" + response.error);
@@ -84,34 +87,43 @@ export default class electronicsOrder extends Component{
                 // You can also display the image using data:
                 // let source = { uri: 'data:image/jpeg;base64,' + response.data };
                 this.setState({
-                    avatarSource: source
+                    avatarSource: source,
+                    sourceData:'data:image/jpeg;base64,' + response.data
                 });
             }
         });
     }
     beginSaoMiao(){
         if(null!=this.state.avatarSource){
-            alert("点击事件");
-        }else{
-            this.setState({viewAppear: true},function(){
-                this.startAnimation();
-            });
+            this.recoginze();
         }
-    }    
+    } 
+    
+    recoginze = async ()=>{
+        // Here is the demoe
+         let result = await LocalBarcodeRecognizer.decode(this.state.sourceData.replace("data:image/jpeg;base64,",""),{codeTypes:['ean13','qr']});
+         alert(result);
+    }   
+    clickSaoMiao(){
+        this.setState({viewAppear: true},function(){
+            this.startAnimation();
+        });
+    } 
     render(){
         return(
              <View style={styles.container}>
                 <Text style={[{fontSize:20},styles.red]}>
-                    {this.state.textval==null?'我是电子':this.state.textval}</Text>
+                    {this.state.textval==null?this.state.tabTitle:this.state.textval}</Text>
                 <Text style={styles.item} onPress={this.choosePic.bind(this)}>选择照片</Text>
                 <Image source={this.state.avatarSource} style={styles.image} />
                 <TouchableOpacity onPress={()=>this.beginSaoMiao()}>
-                    <Text style={{fontSize:20,alignItems:'center'}}>获取图片中运单单号</Text>
+                    <Text style={{fontSize:20,alignItems:'center'}}>获取图片中二维码或者条形码信息</Text>
                 </TouchableOpacity>
-
+                <TouchableOpacity onPress={()=>this.clickSaoMiao()}>
+                    <Text style={{fontSize:20,alignItems:'center'}}>开始扫描</Text>
+                </TouchableOpacity>
                 {this.state.viewAppear ?
                     <View style={{flex: 1, backgroundColor: 'black',}}> 
-                   
                         <RNCamera
                             ref={ref => {
                                 this.camera = ref;
@@ -146,7 +158,7 @@ const styles = StyleSheet.create({
     },
     container:{
         flex: 1,
-        marginTop:25,
+        // marginTop:25,
         backgroundColor: '#F5FCFF',
         // justifyContent: 'center',
         // alignItems: 'center',

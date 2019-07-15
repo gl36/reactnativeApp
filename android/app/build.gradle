@@ -109,6 +109,7 @@ android {
         versionName "1.0"
         missingDimensionStrategy 'react-native-camera', 'general' 
         multiDexEnabled true
+        
     }
      signingConfigs {
         release {
@@ -154,9 +155,13 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+    // dexOptions{
+    //     javaMaxHeapSize "4g"
+    // }
 }
 
 dependencies {
+    implementation project(':react-native-local-barcode-recognizer')
     implementation project(':react-native-camera')
     implementation project(':react-native-image-picker')
     implementation project(':@react-native-community_async-storage')
